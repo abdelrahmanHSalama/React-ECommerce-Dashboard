@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthProvider";
+import { useEffect } from "react";
 
 export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -22,8 +24,18 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [hashError, setHashError] = useState<string | null>(null);
+  // const [hashError, setHashError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { setJustSignedUp } = useAuth();
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        navigate("/dashboard");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +49,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: authUser, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -46,8 +58,17 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
           },
         },
       });
+
+      if (authUser?.user) {
+        await supabase.from("profiles").insert({
+          id: authUser.user.id,
+          role: "seller",
+        });
+      }
+
       if (error) throw error;
       setSuccess(true);
+      setJustSignedUp(true);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An Error Occured!");
     } finally {
@@ -83,45 +104,55 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
     setError(null);
     setIsLoading(false);
     setSuccess(false);
-    setHashError(null);
+    // setHashError(null);
   };
 
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes("error")) {
-      const params = new URLSearchParams(hash.substring(1));
-      const errorCode = params.get("error_code");
-      const errorDescription = params.get("error_description");
+  // ✏️ OTP Error Handling
+  // useEffect(() => {
+  //   const hash = window.location.hash;
+  //   if (hash.includes("error")) {
+  //     const params = new URLSearchParams(hash.substring(1));
+  //     const errorCode = params.get("error_code");
+  //     const errorDescription = params.get("error_description");
 
-      if (errorCode === "otp_expired") {
-        setHashError(
-          "This confirmation link has expired. Please sign up again."
-        );
-      } else {
-        setHashError(
-          decodeURIComponent(errorDescription || "An unknown error occurred.")
-        );
-      }
+  //     if (errorCode === "otp_expired") {
+  //       setHashError(
+  //         "This confirmation link has expired. Please sign up again."
+  //       );
+  //     } else {
+  //       setHashError(
+  //         decodeURIComponent(errorDescription || "An unknown error occurred.")
+  //       );
+  //     }
 
-      // Clear the hash from URL
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-  }, []);
+  //     // Clear the hash from URL
+  //     window.history.replaceState(null, "", window.location.pathname);
+  //   }
+  // }, []);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <h1 className="mx-auto text-[1.5rem] font-bold">NextShop Dashboard</h1>
-      {hashError && (
+      {/* {hashError && (
         <div className="border border-red-400 bg-red-100 text-red-800 text-sm rounded-lg shadow-sm p-4">
           {hashError}
         </div>
-      )}
-      {!isLoggingIn && !success && (
+      )} */}
+      {!isLoggingIn && (
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Sign up</CardTitle>
             <CardDescription>Create a new account.</CardDescription>
           </CardHeader>
+          {success && (
+            <div className="border border-green-400 bg-green-200 text-green-800 text-sm rounded-lg shadow-sm p-4 mx-6 flex gap-2">
+              <p>🥳</p>
+              <p>
+                Account created successfully! You will be redirected to the
+                dashboard now.
+              </p>
+            </div>
+          )}
           <CardContent>
             <form onSubmit={handleSignup} autoComplete="off">
               <div className="flex flex-col gap-6">
@@ -191,7 +222,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
         </Card>
       )}
 
-      {!isLoggingIn && success && (
+      {/* {!isLoggingIn && success && (
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">
@@ -202,7 +233,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
             </CardDescription>
           </CardHeader>
         </Card>
-      )}
+      )} */}
 
       {isLoggingIn && (
         <Card>

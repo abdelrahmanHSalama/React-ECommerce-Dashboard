@@ -3,26 +3,21 @@ import { AuthProvider } from "./context/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 import Home from "./pages/Home";
-import Orders from "./pages/Orders";
+import Dashboard from "./pages/Dashboard";
+import Auth from "./pages/Auth";
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
           <Route
-            path="/"
+            path="/dashboard"
             element={
               <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/orders"
-            element={
-              <ProtectedRoute>
-                <Orders />
+                <Dashboard />
               </ProtectedRoute>
             }
           />
