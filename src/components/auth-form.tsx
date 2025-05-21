@@ -26,16 +26,6 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [success, setSuccess] = useState(false);
   // const [hashError, setHashError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { setJustSignedUp } = useAuth();
-
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => {
-        navigate("/dashboard");
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +39,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
     setIsLoading(true);
 
     try {
-      const { data: authUser, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -59,16 +49,16 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
         },
       });
 
-      if (authUser?.user) {
-        await supabase.from("profiles").insert({
-          id: authUser.user.id,
-          role: "seller",
-        });
+      if (error) {
+        // Custom message for already registered users
+        if (error.message.includes("User already registered")) {
+          setError("This email is already registered. Please sign in instead.");
+        } else {
+          setError(error.message);
+        }
+      } else {
+        setSuccess(true);
       }
-
-      if (error) throw error;
-      setSuccess(true);
-      setJustSignedUp(true);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An Error Occured!");
     } finally {
@@ -147,10 +137,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
           {success && (
             <div className="border border-green-400 bg-green-200 text-green-800 text-sm rounded-lg shadow-sm p-4 mx-6 flex gap-2">
               <p>🥳</p>
-              <p>
-                Account created successfully! You will be redirected to the
-                dashboard now.
-              </p>
+              <p>Account created! Please check your email to confirm it.</p>
             </div>
           )}
           <CardContent>

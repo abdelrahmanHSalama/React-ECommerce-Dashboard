@@ -1,5 +1,14 @@
+import { Helmet } from "react-helmet";
+
 const Dashboard = () => {
-  return <div>Dashboard</div>;
+  return (
+    <div>
+      <Helmet>
+        <title>Dashboard Home | NextShop Dashboard</title>
+      </Helmet>
+      <p>Dashboard</p>
+    </div>
+  );
 };
 
 export default Dashboard;
